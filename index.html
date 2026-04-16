@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control QR Liceo</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  padding: 20px;
+}
+button {
+  padding: 10px 20px;
+  margin: 5px;
+  font-size: 16px;
+}
+#reader {
+  margin: auto;
+  width: 300px;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- 🔊 SONIDO -->
+
+<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+<h2>📲 Control de Asistencia QR</h2>
+
+<button onclick="modo='entrada'">Entrada</button> <button onclick="modo='salida'">Salida</button>
+
+<div id="reader"></div>
+
+<script>
+
+let modo = "entrada";
+let ultimo = "";
+
+// 🔴 PEGA AQUÍ TU URL
+const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxtKrJy5ofEg08UTsTCWvbrhhTGCR67pTLdicCAkkcMYTUst9WF0V-GppDfziunyloD/exec";
+
+async function registrar(rut) {
+  const ahora = new Date();
+
+  const data = {
+    rut: rut.trim(),
+    tipo: modo,
+    hora: ahora.toLocaleTimeString(),
+    fecha: ahora.toLocaleDateString()
+  };
+
+  fetch(URL_SCRIPT, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  })
+  .then(() => {
+    document.body.style.backgroundColor = "#d4edda";
+
+    setTimeout(() => {
+      document.body.style.backgroundColor = "white";
+    }, 500);
+  })
+  .catch(() => alert("Error al enviar datos"));
+}
+
+function onScanSuccess(decodedText) {
+
+  if (decodedText === ultimo) return;
+  ultimo = decodedText;
+
+  document.getElementById("beep").play();
+
+  registrar(decodedText);
+}
+
+const qr = new Html5Qrcode("reader");
+
+qr.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  onScanSuccess
+);
+
+</script>
+
+</body>
+</html>
