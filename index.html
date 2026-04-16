@@ -161,8 +161,11 @@ function onScanSuccess(decodedText) {
 const qr = new Html5Qrcode("reader");
 
 qr.start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
+  { facingMode: { exact: "environment" } },
+  { 
+    fps: 5,
+    qrbox: { width: 200, height: 200 }
+  },
   onScanSuccess
 );
 
