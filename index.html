@@ -13,15 +13,54 @@ body {
   font-family: Arial;
   text-align: center;
   padding: 20px;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: white;
 }
+
+h2 {
+  margin-bottom: 10px;
+}
+
+h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
 button {
-  padding: 10px 20px;
+  padding: 12px 25px;
   margin: 5px;
   font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #2a5298;
+  font-weight: bold;
+  cursor: pointer;
 }
+
+button:hover {
+  background-color: #e0e0e0;
+}
+
 #reader {
   margin: auto;
   width: 300px;
+  border: 5px solid white;
+  border-radius: 10px;
+  padding: 10px;
+  background: black;
+}
+
+#estado {
+  font-size: 18px;
+  margin: 10px;
+  font-weight: bold;
+}
+
+#mensaje {
+  font-size: 22px;
+  margin-top: 15px;
+  font-weight: bold;
 }
 </style>
 
@@ -33,19 +72,35 @@ button {
 
 <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
-<h2>📲 Control de Asistencia QR</h2>
+<h2>🏫 Liceo Luis Urbina Flores</h2>
+<h3>📲 Control de Asistencia QR</h3>
 
-<button onclick="modo='entrada'">Entrada</button> <button onclick="modo='salida'">Salida</button>
+<button onclick="cambiarModo('entrada')">Entrada</button> <button onclick="cambiarModo('salida')">Salida</button>
+
+<p id="estado">Modo: ENTRADA</p>
+
+<button onclick="activarSonido()">🔊 Activar sonido</button>
 
 <div id="reader"></div>
+
+<p id="mensaje"></p>
 
 <script>
 
 let modo = "entrada";
 let ultimo = "";
 
-// 🔴 PEGA AQUÍ TU URL
+// 🔴 PEGA AQUÍ TU URL DE APPS SCRIPT
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxtKrJy5ofEg08UTsTCWvbrhhTGCR67pTLdicCAkkcMYTUst9WF0V-GppDfziunyloD/exec";
+
+function cambiarModo(nuevoModo) {
+  modo = nuevoModo;
+  document.getElementById("estado").innerText = "Modo: " + nuevoModo.toUpperCase();
+}
+
+function activarSonido() {
+  document.getElementById("beep").play();
+}
 
 async function registrar(rut) {
   const ahora = new Date();
@@ -66,11 +121,21 @@ async function registrar(rut) {
     body: JSON.stringify(data)
   })
   .then(() => {
-    document.body.style.backgroundColor = "#d4edda";
+
+    // 🎨 color según modo
+    if (modo === "entrada") {
+      document.body.style.backgroundColor = "#28a745";
+      document.getElementById("mensaje").innerText = "✅ ENTRADA REGISTRADA";
+    } else {
+      document.body.style.backgroundColor = "#dc3545";
+      document.getElementById("mensaje").innerText = "📤 SALIDA REGISTRADA";
+    }
 
     setTimeout(() => {
-      document.body.style.backgroundColor = "white";
-    }, 500);
+      document.body.style.background = "linear-gradient(135deg, #1e3c72, #2a5298)";
+      document.getElementById("mensaje").innerText = "";
+    }, 1500);
+
   })
   .catch(() => alert("Error al enviar datos"));
 }
@@ -80,7 +145,8 @@ function onScanSuccess(decodedText) {
   if (decodedText === ultimo) return;
   ultimo = decodedText;
 
-  document.getElementById("beep").play();
+  let beep = document.getElementById("beep");
+  beep.play();
 
   registrar(decodedText);
 }
