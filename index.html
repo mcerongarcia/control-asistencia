@@ -88,10 +88,13 @@ button:hover {
 <script>
 
 let modo = "entrada";
-let ultimo = "";
 
 // 🔴 PEGA AQUÍ TU URL DE APPS SCRIPT
 const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxtKrJy5ofEg08UTsTCWvbrhhTGCR67pTLdicCAkkcMYTUst9WF0V-GppDfziunyloD/exec";
+
+// 🔁 CONTROL DE DOBLE ESCANEO (3 SEGUNDOS)
+let ultimo = "";
+let tiempoUltimo = 0;
 
 function cambiarModo(nuevoModo) {
   modo = nuevoModo;
@@ -142,11 +145,15 @@ async function registrar(rut) {
 
 function onScanSuccess(decodedText) {
 
-  if (decodedText === ultimo) return;
-  ultimo = decodedText;
+  const ahora = Date.now();
 
-  let beep = document.getElementById("beep");
-  beep.play();
+  // ⛔ bloquea solo 3 segundos
+  if (decodedText === ultimo && (ahora - tiempoUltimo) < 3000) return;
+
+  ultimo = decodedText;
+  tiempoUltimo = ahora;
+
+  document.getElementById("beep").play();
 
   registrar(decodedText);
 }
