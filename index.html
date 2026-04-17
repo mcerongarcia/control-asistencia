@@ -1,181 +1,50 @@
-<!DOCTYPE html>
+function doPost(e) {
 
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Control QR Liceo</title>
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var reg = ss.getSheetByName("REGISTROS");
+  var est = ss.getSheetByName("ESTUDIANTES");
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+  var datos = JSON.parse(e.postData.contents);
+  var rut = datos.rut;
 
-<style>
-body {
-  font-family: Arial;
-  text-align: center;
-  padding: 15px;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  color: white;
-}
+  var lista = est.getDataRange().getValues();
 
-h2 {
-  margin-bottom: 5px;
-}
+  var nombre = "NO";
+  var apellido1 = "REGISTRADO";
+  var apellido2 = "";
+  var curso = "-";
 
-h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-}
-
-button {
-  padding: 16px 25px;
-  margin: 6px;
-  font-size: 17px;
-  border: none;
-  border-radius: 10px;
-  background-color: #ffffff;
-  color: #2a5298;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-#reader {
-  margin: auto;
-  width: 260px;
-  border: 4px solid white;
-  border-radius: 10px;
-  padding: 8px;
-  background: black;
-}
-
-#estado {
-  font-size: 18px;
-  margin: 10px;
-  font-weight: bold;
-}
-
-#mensaje {
-  font-size: 26px;
-  margin-top: 10px;
-  font-weight: bold;
-}
-</style>
-
-</head>
-
-<body>
-
-<audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-
-<h2>🏫 Liceo Luis Urbina Flores</h2>
-<h3>📲 Control de Asistencia QR</h3>
-
-<button onclick="cambiarModo('entrada')">🟢 Entrada</button> <button onclick="cambiarModo('salida')">🔴 Salida</button> <button onclick="cambiarModo('almuerzo')">🍽️ Almuerzo</button> <button onclick="cambiarModo('atraso')">⏰ Atraso</button>
-
-<p id="estado">Modo: ENTRADA</p>
-
-<button onclick="activarSonido()">🔊 Activar sonido</button>
-
-<div id="reader"></div>
-
-<p id="mensaje"></p>
-
-<script>
-
-let modo = "entrada";
-let ultimo = "";
-let tiempoUltimo = 0;
-
-// 🔴 PEGA AQUÍ TU URL
-const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxtKrJy5ofEg08UTsTCWvbrhhTGCR67pTLdicCAkkcMYTUst9WF0V-GppDfziunyloD/exec";
-
-function cambiarModo(nuevoModo) {
-  modo = nuevoModo;
-  document.getElementById("estado").innerText = "Modo: " + nuevoModo.toUpperCase();
-}
-
-function activarSonido() {
-  document.getElementById("beep").play();
-}
-
-function registrar(rut) {
-
-  const ahora = new Date();
-
-  fetch(URL_SCRIPT, {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify({
-      rut: rut.trim(),
-      tipo: modo,
-      hora: ahora.toLocaleTimeString(),
-      fecha: ahora.toLocaleDateString()
-    })
-  });
-
-  // colores + mensaje
-  if (modo === "entrada") {
-    document.body.style.backgroundColor = "#28a745";
-    document.getElementById("mensaje").innerText = "✅ ENTRADA";
-
-  } else if (modo === "salida") {
-    document.body.style.backgroundColor = "#dc3545";
-    document.getElementById("mensaje").innerText = "📤 SALIDA";
-
-  } else if (modo === "almuerzo") {
-    document.body.style.backgroundColor = "#ffc107";
-    document.getElementById("mensaje").innerText = "🍽️ ALMUERZO";
-
-  } else if (modo === "atraso") {
-    document.body.style.backgroundColor = "#fd7e14";
-    document.getElementById("mensaje").innerText = "⏰ ATRASO";
+  for (var i = 1; i < lista.length; i++) {
+    if (lista[i][0] == rut) {
+      nombre = lista[i][1];
+      apellido1 = lista[i][2];
+      apellido2 = lista[i][3];
+      curso = lista[i][4];
+      break;
+    }
   }
 
-  setTimeout(() => {
-    document.body.style.background = "linear-gradient(135deg, #1e3c72, #2a5298)";
-    document.getElementById("mensaje").innerText = "";
-  }, 1200);
+  var ahora = new Date();
+  var estado = (ahora.getHours() >= 8 && ahora.getMinutes() > 10) ? "ATRASO" : "OK";
 
-  // sonido + vibración
-  document.getElementById("beep").play();
-  if (navigator.vibrate) navigator.vibrate(150);
+  reg.appendRow([
+    rut,
+    nombre,
+    apellido1,
+    apellido2,
+    curso,
+    datos.tipo,
+    datos.hora,
+    datos.fecha,
+    estado
+  ]);
+
+  // 🔥 DEVOLVER DATOS A LA APP
+  return ContentService.createTextOutput(JSON.stringify({
+    nombre: nombre,
+    apellido1: apellido1,
+    apellido2: apellido2,
+    curso: curso,
+    estado: estado
+  })).setMimeType(ContentService.MimeType.JSON);
 }
-
-function onScanSuccess(texto) {
-
-  const ahora = Date.now();
-
-  // evita duplicados rápidos
-  if (texto === ultimo && (ahora - tiempoUltimo) < 3000) return;
-
-  ultimo = texto;
-  tiempoUltimo = ahora;
-
-  registrar(texto);
-}
-
-// 🔥 COMPATIBLE PC + CELULAR
-const qr = new Html5Qrcode("reader");
-
-qr.start(
-  { facingMode: "environment" },
-  { fps: 6, qrbox: 200 },
-  onScanSuccess
-).catch(() => {
-
-  // fallback para computador
-  qr.start(
-    { facingMode: "user" },
-    { fps: 6, qrbox: 200 },
-    onScanSuccess
-  );
-
-});
-
-</script>
-
-</body>
-</html>
-
-
-</body>
-</html>
