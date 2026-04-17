@@ -1,33 +1,36 @@
-@@ -12,42 +12,38 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control QR Liceo</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
 body {
   font-family: Arial;
   text-align: center;
-  padding: 20px;
   padding: 15px;
   background: linear-gradient(135deg, #1e3c72, #2a5298);
   color: white;
 }
 
 h2 {
-  margin-bottom: 10px;
   margin-bottom: 5px;
 }
 
 h3 {
   margin-top: 0;
-  margin-bottom: 20px;
   margin-bottom: 15px;
 }
 
 button {
-  padding: 12px 25px;
-  margin: 5px;
-  font-size: 16px;
   padding: 16px 25px;
   margin: 6px;
   font-size: 17px;
   border: none;
-  border-radius: 8px;
   border-radius: 10px;
   background-color: #ffffff;
   color: #2a5298;
@@ -35,58 +38,50 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background-color: #e0e0e0;
-}
-
 #reader {
   margin: auto;
-  width: 300px;
-  border: 5px solid white;
   width: 260px;
   border: 4px solid white;
   border-radius: 10px;
-  padding: 10px;
   padding: 8px;
   background: black;
 }
 
-@@ -58,8 +54,8 @@
+#estado {
+  font-size: 18px;
+  margin: 10px;
+  font-weight: bold;
 }
 
 #mensaje {
-  font-size: 22px;
-  margin-top: 15px;
   font-size: 26px;
   margin-top: 10px;
   font-weight: bold;
 }
 </style>
-@@ -68,14 +64,12 @@
+
+</head>
 
 <body>
-
-<!-- 🔊 SONIDO -->
 
 <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <h2>🏫 Liceo Luis Urbina Flores</h2>
 <h3>📲 Control de Asistencia QR</h3>
 
-<button onclick="cambiarModo('entrada')">Entrada</button> <button onclick="cambiarModo('salida')">Salida</button>
 <button onclick="cambiarModo('entrada')">🟢 Entrada</button> <button onclick="cambiarModo('salida')">🔴 Salida</button> <button onclick="cambiarModo('almuerzo')">🍽️ Almuerzo</button> <button onclick="cambiarModo('atraso')">⏰ Atraso</button>
 
 <p id="estado">Modo: ENTRADA</p>
 
-@@ -88,14 +82,12 @@ <h3>📲 Control de Asistencia QR</h3>
+<button onclick="activarSonido()">🔊 Activar sonido</button>
+
+<div id="reader"></div>
+
+<p id="mensaje"></p>
+
 <script>
 
 let modo = "entrada";
-
-// 🔴 PEGA AQUÍ TU URL DE APPS SCRIPT
-const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxtKrJy5ofEg08UTsTCWvbrhhTGCR67pTLdicCAkkcMYTUst9WF0V-GppDfziunyloD/exec";
-
-// 🔁 CONTROL DE DOBLE ESCANEO (3 SEGUNDOS)
 let ultimo = "";
 let tiempoUltimo = 0;
 
@@ -96,48 +91,19 @@ const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxtKrJy5ofEg08UTsTCW
 function cambiarModo(nuevoModo) {
   modo = nuevoModo;
   document.getElementById("estado").innerText = "Modo: " + nuevoModo.toUpperCase();
-@@ -105,71 +97,85 @@ <h3>📲 Control de Asistencia QR</h3>
+}
+
+function activarSonido() {
   document.getElementById("beep").play();
 }
 
-async function registrar(rut) {
-  const ahora = new Date();
 function registrar(rut) {
 
-  const data = {
-    rut: rut.trim(),
-    tipo: modo,
-    hora: ahora.toLocaleTimeString(),
-    fecha: ahora.toLocaleDateString()
-  };
   const ahora = new Date();
 
   fetch(URL_SCRIPT, {
     method: "POST",
     mode: "no-cors",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-  })
-  .then(() => {
-
-    // 🎨 color según modo
-    if (modo === "entrada") {
-      document.body.style.backgroundColor = "#28a745";
-      document.getElementById("mensaje").innerText = "✅ ENTRADA REGISTRADA";
-    } else {
-      document.body.style.backgroundColor = "#dc3545";
-      document.getElementById("mensaje").innerText = "📤 SALIDA REGISTRADA";
-    }
-
-    setTimeout(() => {
-      document.body.style.background = "linear-gradient(135deg, #1e3c72, #2a5298)";
-      document.getElementById("mensaje").innerText = "";
-    }, 1500);
-
-  })
-  .catch(() => alert("Error al enviar datos"));
     body: JSON.stringify({
       rut: rut.trim(),
       tipo: modo,
@@ -174,23 +140,16 @@ function registrar(rut) {
   if (navigator.vibrate) navigator.vibrate(150);
 }
 
-function onScanSuccess(decodedText) {
 function onScanSuccess(texto) {
 
   const ahora = Date.now();
 
-  // ⛔ bloquea solo 3 segundos
-  if (decodedText === ultimo && (ahora - tiempoUltimo) < 3000) return;
   // evita duplicados rápidos
   if (texto === ultimo && (ahora - tiempoUltimo) < 3000) return;
 
-  ultimo = decodedText;
   ultimo = texto;
   tiempoUltimo = ahora;
 
-  document.getElementById("beep").play();
-
-  registrar(decodedText);
   registrar(texto);
 }
 
@@ -198,15 +157,9 @@ function onScanSuccess(texto) {
 const qr = new Html5Qrcode("reader");
 
 qr.start(
-  { facingMode: { exact: "environment" } },
-  { 
-    fps: 5,
-    qrbox: { width: 200, height: 200 }
-  },
   { facingMode: "environment" },
   { fps: 6, qrbox: 200 },
   onScanSuccess
-);
 ).catch(() => {
 
   // fallback para computador
@@ -224,5 +177,7 @@ qr.start(
 </html>
 
 
+</body>
+</html>
 </body>
 </html>
